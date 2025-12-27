@@ -126,10 +126,10 @@ st.write(f"The final point (x,y) will be: ({final_x}, {final_y}) if the angle fo
 
 ##Inverse Kinematics Section
 st.sidebar.title("Inverse Kinematics")
-final_x = st.sidebar.number_input("Final x coordinate for (x,y)", value=90, placeholder="Type a number...")
+final_x = st.sidebar.number_input("Final x coordinate for (x,y)", value=90, placeholder="Type a number...", min_value = (-link_one_length+link_two_length), max_value = link_one_length+link_two_length)
 st.sidebar.write(f"Final x coordinate is: {final_x}")
 
-final_y = st.sidebar.number_input("Final y coordinate for (x,y)", value=90, placeholder="Type a number...")
+final_y = st.sidebar.number_input("Final y coordinate for (x,y)", value=90, placeholder="Type a number...",min_value = 0, max_value = link_one_length+link_two_length)
 st.sidebar.write(f"Final y coordinate is: {final_y}")
 
 def load_data_two(final_x, final_y,link_one_length,link_two_length):
