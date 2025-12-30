@@ -21,6 +21,10 @@ link_two_length = st.sidebar.number_input(
     "Insert a length for Link Two (units)", value=65, placeholder="Type a number..."
 )
 
+link_three_length = st.sidebar.number_input(
+    "Insert a length for Link Three (units)", value=10, placeholder="Type a number..."
+)
+
 st.sidebar.title("Forward Kinematics")
 
 theta_one = st.sidebar.slider("Angle for the first link", 0, 180, 25)
@@ -233,3 +237,119 @@ st.header("Inverse Kinematics Simulation",divider=True)
 fig_2, theta_one, theta_two = load_data_two(final_x, final_y,link_one_length,link_two_length)
 st.plotly_chart(fig_2, use_container_width=True)
 st.write(f"The angle for Link One will be {theta_one}° and the angle for Link Two will be {theta_two}° in order to get to (x,y) point ({final_x}, {final_y})")
+
+def load_data_three(final_x, final_y,link_one_length,link_two_length, link_three_length):
+    line_three_final_x = final_x - link_three_length
+
+    hyp_one = math.sqrt(line_three_final_x**2 + final_y**2)
+    alpha_one = math.atan2(final_y, line_three_final_x)
+    beta_one = math.acos((link_one_length**2 - link_two_length**2 -hyp_one**2)/(-2*hyp_one*link_two_length))
+    theta_one = math.degrees(alpha_one+beta_one)
+
+    triangle_one_height = link_one_length * math.sin(math.radians(theta_one))
+    triangle_one_width = link_one_length * math.cos(math.radians(theta_one))
+
+    triangle_two_height = final_y
+    triangle_two_width = final_x - link_three_length
+
+    theta_two = math.acos((link_one_length**2 + link_two_length**2 - hyp_one**2)/ (2 * link_one_length * link_two_length))
+    theta_two = -1 * (180 - math.degrees(theta_two))
+
+    gamma = 0
+    theta_three = gamma - (theta_one+theta_two)
+
+    theta_base = math.atan2(final_y, line_three_final_x)
+
+    line_one_y = [0, triangle_one_height]
+    line_two_y = [triangle_one_height, triangle_two_height]
+
+    line_one_x = [0, triangle_one_width]
+    line_two_x = [triangle_one_width, triangle_two_width]
+
+    line_three_x = [triangle_two_width, triangle_two_width + link_three_length]
+    line_three_y = [triangle_two_height, triangle_two_height]
+
+    fig_3 = go.Figure()
+
+    ##Link 1
+    fig_3 = fig_3.add_trace(go.Scatter(x=line_one_x, y=line_one_y, name='Link 1', line=dict(color='blue', width=5)))
+
+    ##Link 2
+    fig_3 = fig_3.add_trace(go.Scatter(x=line_two_x, y=line_two_y, name='Link 2', line=dict(color='green', width=5)))
+
+    #Link 3
+    fig_3 = fig_3.add_trace(go.Scatter(x=line_three_x, y=line_three_y, name='Link 3', line=dict(color='yellow', width=5)))
+
+    fig_3 = fig_3.update_layout(
+        xaxis=dict(
+            range=[-100, 200],  
+            dtick=10,         
+            fixedrange=True,   
+            zeroline=True, 
+            zerolinewidth=2, 
+            zerolinecolor='white',
+            tickangle=-60
+        ),
+        
+        yaxis=dict(
+            range=[-100, 200], 
+            dtick=10,
+            fixedrange=True,   
+            scaleanchor="x",
+            scaleratio=1,
+            zeroline=True, 
+            zerolinewidth=2, 
+            zerolinecolor='white'
+        ),
+
+        width=800,
+        height=800,
+        
+        dragmode=False 
+    )
+    ##Origin 
+    fig_3 = fig_3.add_scatter(x=[0], 
+                    y=[0],
+                    marker=dict(
+                    color='white',
+                    size=10
+                    ),
+                    name='Origin')
+    
+    ##Joint 1
+    fig_3 = fig_3.add_scatter(x=[triangle_one_width], 
+                    y=[triangle_one_height],
+                    marker=dict(
+                        color='white',
+                        size=10
+                    ),
+                    name='Joint 1')
+
+    ##Final Point
+    fig_3 = fig_3.add_scatter(x=[final_x], 
+                    y=[final_y],
+                    marker=dict(
+                        color='red',
+                        size=10
+                    ),
+                    name='Final Point (x,y)')
+
+
+    fig_3 = fig_3.add_annotation(
+        text=f"<b>Current State:</b><br>Link 1 Length: {link_one_length} mm<br>Link 2 Length: {link_two_length} mm<br>Link 3 Length: {link_three_length} mm<br>θ_base: {theta_base}°<br>θ1: {theta_one}°<br>θ2: {theta_two}°<br>θ3: {theta_three}°<br>Final Point (x,y): ({final_x}, {final_y})",
+        align='left',
+        showarrow=False,
+        xref='paper', yref='paper',
+        x=0.02, y=0.98,  
+        bgcolor="grey",
+        bordercolor="black",
+        borderwidth=1
+    )
+
+    return fig_3, theta_one, theta_two, theta_three
+
+fig_3, theta_one, theta_two, theta_three = load_data_three(final_x, final_y,link_one_length,link_two_length, link_three_length)
+st.header("Inverse Kinematics Simulation for My Design",divider=True)
+fig_2, theta_one, theta_two = load_data_two(final_x, final_y,link_one_length,link_two_length)
+st.plotly_chart(fig_3, use_container_width=True)
+st.write(f"The angle for Link One will be {theta_one}°, the angle for Link Two will be {theta_two}°, and the angle for Link Three will be {theta_three} in order to get to (x,y) point ({final_x}, {final_y})")
