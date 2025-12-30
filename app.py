@@ -352,4 +352,4 @@ fig_3, theta_one, theta_two, theta_three = load_data_three(final_x, final_y,link
 st.header("Inverse Kinematics Simulation for My Design",divider=True)
 fig_2, theta_one, theta_two = load_data_two(final_x, final_y,link_one_length,link_two_length)
 st.plotly_chart(fig_3, use_container_width=True)
-st.write(f"The angle for Link One will be {theta_one}°, the angle for Link Two will be {theta_two}°, and the angle for Link Three will be {theta_three} in order to get to (x,y) point ({final_x}, {final_y})")
+st.write(f"The angle for Link One will be {theta_one}°, the angle for Link Two will be {theta_two}°, and the angle for Link Three will be {theta_three}° in order to get to (x,y) point ({final_x}, {final_y})")
