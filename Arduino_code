@@ -64,6 +64,10 @@ float theta_base(){
   return theta_base;
 }
 
+float calibrate(float x){
+  float y = x +90;
+  return y;
+}
 void setup() {
   //Arduino Setup
   Serial.begin(9600);
@@ -82,8 +86,15 @@ void loop() {
     String msg = Serial.readString();
   }
 
+  //Call all Calculations
   float t1 = theta1();
   float t2 = theta2();
   float t3 = theta3(t1, t2);
   float tb = theta_base();
+
+  //Calibrate them taking into account the 90 degree offset
+  t1 = calibrate(t1);
+  t2 = calibrate(t2);
+  t3 = calibrate(t3);
+  tb = calibrate(tb);
 }
