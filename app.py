@@ -6,11 +6,11 @@ import plotly.express as px
 import plotly.graph_objects as go
 
 st.set_page_config(
-    page_title="Inverse/Forward Kinematics 2DOF Simulation",
+    page_title="Inverse/Forward Kinematics Simulation",
     layout="wide"  
 )
 
-st.title("Inverse/Forward Kinematics 2DOF Simulation")
+st.title("Inverse/Forward Kinematics Simulation")
 
 st.sidebar.title("Robotic Arm Dimensions")
 link_one_length = st.sidebar.number_input(
@@ -123,7 +123,7 @@ def load_data(link_one_length, theta_one, link_two_length, theta_two):
     )
     return fig, final_x, final_y
 
-st.header("Forward Kinematics Simulation",divider=True)
+st.header("2DOF Forward Kinematics Simulation",divider=True)
 fig, final_x, final_y = load_data(link_one_length, theta_one, link_two_length, theta_two)
 st.plotly_chart(fig, use_container_width=True)
 st.write(f"The final point (x,y) will be: ({final_x}, {final_y}) if the angle for Link One is {theta_one}° and the angle for Link two is {theta_two}°")
@@ -233,7 +233,7 @@ def load_data_two(final_x, final_y,link_one_length,link_two_length):
         )
         return fig_2, theta_one, theta_two
 
-st.header("Inverse Kinematics Simulation",divider=True)
+st.header("2DOF Inverse Kinematics Simulation",divider=True)
 fig_2, theta_one, theta_two = load_data_two(final_x, final_y,link_one_length,link_two_length)
 st.plotly_chart(fig_2, use_container_width=True)
 st.write(f"The angle for Link One will be {theta_one}° and the angle for Link Two will be {theta_two}° in order to get to (x,y) point ({final_x}, {final_y})")
@@ -349,7 +349,8 @@ def load_data_three(final_x, final_y,link_one_length,link_two_length, link_three
     return fig_3, theta_one, theta_two, theta_three
 
 fig_3, theta_one, theta_two, theta_three = load_data_three(final_x, final_y,link_one_length,link_two_length, link_three_length)
-st.header("Inverse Kinematics Simulation for My Design",divider=True)
+st.header("Inverse Kinematics Simulation for My Design (4DOF)",divider=True)
 fig_2, theta_one, theta_two = load_data_two(final_x, final_y,link_one_length,link_two_length)
 st.plotly_chart(fig_3, use_container_width=True)
 st.write(f"The angle for Link One will be {theta_one}°, the angle for Link Two will be {theta_two}°, and the angle for Link Three will be {theta_three}° in order to get to (x,y) point ({final_x}, {final_y})")
+st.write("For this simulation, I decided to set gamma (the angle the wrist is at parallel to the ground) at 0, however all other values can be adjusted accordingly to one's liking")
