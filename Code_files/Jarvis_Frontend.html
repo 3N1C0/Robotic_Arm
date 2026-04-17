@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>J.O.N.A.T.H.A.N.</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --blue:    #00d4ff;
+  --blue2:   #0088bb;
+  --dim:     rgba(0,212,255,0.12);
+  --border:  rgba(0,212,255,0.2);
+  --bg:      #020c1b;
+  --text:    #00d4ff;
+  --muted:   rgba(0,212,255,0.35);
+  --font:    'Orbitron', monospace;
+  --mono:    'Share Tech Mono', monospace;
+  --bar-h:   56px;
+}
+
+html, body {
+  height: 100%; width: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--mono);
+  overflow: hidden;
+}
+
+/* ── TOP BAR ─────────────────────────────────────────────────── */
+#topbar {
+  position: fixed; top: 0; left: 0; right: 0;
+  height: var(--bar-h);
+  display: flex; align-items: center;
+  padding: 0 20px;
+  background: rgba(2,12,27,0.85);
+  border-bottom: 1px solid var(--border);
+  backdrop-filter: blur(12px);
+  z-index: 100;
+  gap: 16px;
+}
+
+/* Hamburger */
+#menuBtn {
+  display: flex; flex-direction: column;
+  justify-content: center; gap: 5px;
+  width: 36px; height: 36px;
+  cursor: pointer; background: none; border: none;
+  padding: 6px; flex-shrink: 0;
+}
+#menuBtn span {
+  display: block; height: 1.5px;
+  background: var(--blue);
+  transition: all 0.3s;
+  transform-origin: center;
+}
+#menuBtn.open span:nth-child(1) { transform: translateY(6.5px) rotate(45deg); }
+#menuBtn.open span:nth-child(2) { opacity: 0; transform: scaleX(0); }
+#menuBtn.open span:nth-child(3) { transform: translateY(-6.5px) rotate(-45deg); }
+
+/* Title */
+.bar-title {
+  font-family: var(--font);
+  font-size: 14px; font-weight: 900;
+  letter-spacing: 0.25em;
+  color: var(--blue);
+  text-shadow: 0 0 16px rgba(0,212,255,0.6);
+  flex: 1;
+}
+
+/* Status */
+#connStatus {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 10px; letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+.dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--muted);
+  transition: all 0.4s;
+  flex-shrink: 0;
+}
+.dot.on  { background: var(--blue); box-shadow: 0 0 8px var(--blue); animation: blink 2s ease infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.5} }
+
+/* Port selector row */
+#portRow {
+  display: flex; align-items: center; gap: 8px;
+  margin-left: auto;
+}
+select {
+  background: rgba(0,0,0,0.5);
+  border: 1px solid var(--border);
+  color: var(--blue); font-family: var(--mono);
+  font-size: 11px; padding: 4px 10px;
+  border-radius: 2px; outline: none;
+  cursor: pointer;
+}
+select option { background: #040f1f; }
+.bar-btn {
+  font-family: var(--font); font-size: 9px;
+  font-weight: 700; letter-spacing: 0.15em;
+  text-transform: uppercase;
+  padding: 5px 14px;
+  border: 1px solid var(--border);
+  background: none; color: var(--blue);
+  border-radius: 2px; cursor: pointer;
+  transition: all 0.2s; white-space: nowrap;
+}
+.bar-btn:hover { border-color: var(--blue); box-shadow: 0 0 12px rgba(0,212,255,0.3); }
+.bar-btn:disabled { opacity: 0.25; pointer-events: none; }
+
+/* ── SLIDE-OUT COMMAND MENU ───────────────────────────────────── */
+#cmdMenu {
+  position: fixed; top: var(--bar-h); left: 0; bottom: 0;
+  width: 300px;
+  background: rgba(2,10,24,0.97);
+  border-right: 1px solid var(--border);
+  backdrop-filter: blur(20px);
+  z-index: 90;
+  transform: translateX(-100%);
+  transition: transform 0.35s cubic-bezier(0.4,0,0.2,1);
+  overflow-y: auto;
+  padding: 24px 0 40px;
+}
+#cmdMenu.open { transform: translateX(0); }
+
+.menu-section {
+  padding: 0 20px 8px;
+  margin-top: 8px;
+}
+.menu-label {
+  font-size: 9px; letter-spacing: 0.3em;
+  color: var(--muted); text-transform: uppercase;
+  padding: 12px 20px 6px;
+  border-top: 1px solid rgba(0,212,255,0.07);
+  margin-top: 8px;
+}
+.menu-label:first-child { border-top: none; margin-top: 0; }
+
+.menu-cmd {
+  display: flex; align-items: center;
+  justify-content: space-between;
+  width: 100%; padding: 10px 20px;
+  background: none; border: none;
+  color: var(--blue); font-family: var(--mono);
+  font-size: 12px; letter-spacing: 0.05em;
+  cursor: pointer; text-align: left;
+  transition: background 0.15s;
+  gap: 12px;
+}
+.menu-cmd:hover { background: rgba(0,212,255,0.06); }
+.menu-cmd:active { background: rgba(0,212,255,0.12); }
+.menu-cmd .cmd-label { flex: 1; }
+.menu-cmd .cmd-key {
+  font-family: var(--font); font-size: 8px;
+  font-weight: 700; letter-spacing: 0.2em;
+  color: rgba(0,212,255,0.5);
+  border: 1px solid rgba(0,212,255,0.2);
+  padding: 2px 6px; border-radius: 2px;
+  white-space: nowrap;
+}
+.menu-cmd .cmd-desc {
+  font-size: 10px; color: var(--muted);
+  display: block; margin-top: 2px;
+}
+
+/* Text input in menu */
+.menu-input-row {
+  display: flex; gap: 8px; padding: 10px 20px;
+}
+.menu-input-row input {
+  flex: 1;
+  background: rgba(0,0,0,0.4);
+  border: 1px solid var(--border);
+  color: var(--blue); font-family: var(--mono);
+  font-size: 12px; padding: 7px 10px;
+  border-radius: 2px; outline: none;
+}
+.menu-input-row input::placeholder { color: var(--muted); }
+.menu-input-row button {
+  font-family: var(--font); font-size: 9px;
+  font-weight: 700; letter-spacing: 0.1em;
+  padding: 7px 14px;
+  border: 1px solid var(--border);
+  background: none; color: var(--blue);
+  border-radius: 2px; cursor: pointer;
+  transition: all 0.2s;
+}
+.menu-input-row button:hover { border-color: var(--blue); box-shadow: 0 0 10px rgba(0,212,255,0.3); }
+
+/* Overlay behind menu on mobile */
+#overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.4);
+  z-index: 89;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.3s;
+}
+#overlay.show { opacity: 1; pointer-events: all; }
+
+/* ── MAIN CANVAS AREA ─────────────────────────────────────────── */
+#stage {
+  position: fixed;
+  top: var(--bar-h); left: 0; right: 0; bottom: 0;
+}
+
+canvas#orb {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+}
+
+/* ── ORB CENTER LABEL ─────────────────────────────────────────── */
+#orbCenter {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  pointer-events: none;
+  z-index: 10;
+}
+#orbStatus {
+  font-family: var(--font);
+  font-size: clamp(10px, 1.5vw, 13px);
+  font-weight: 700;
+  letter-spacing: 0.3em;
+  color: var(--blue);
+  text-shadow: 0 0 20px rgba(0,212,255,0.8);
+  text-transform: uppercase;
+  opacity: 0.9;
+}
+#orbResponse {
+  font-size: clamp(9px, 1.2vw, 11px);
+  letter-spacing: 0.1em;
+  color: rgba(0,212,255,0.55);
+  margin-top: 6px;
+  max-width: 220px;
+  line-height: 1.5;
+}
+
+/* ── MIC BUTTON (floating bottom centre) ─────────────────────── */
+#micWrap {
+  position: fixed;
+  bottom: 36px; left: 50%;
+  transform: translateX(-50%);
+  display: flex; flex-direction: column;
+  align-items: center; gap: 10px;
+  z-index: 20;
+}
+#micBtn {
+  width: 64px; height: 64px;
+  border-radius: 50%;
+  border: 1px solid rgba(0,212,255,0.4);
+  background: rgba(0,212,255,0.04);
+  color: var(--blue);
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.25s;
+  position: relative;
+}
+#micBtn::before {
+  content: '';
+  position: absolute; inset: -8px;
+  border-radius: 50%;
+  border: 1px solid rgba(0,212,255,0.1);
+  transition: all 0.4s;
+}
+#micBtn:hover { border-color: var(--blue); box-shadow: 0 0 24px rgba(0,212,255,0.4); }
+#micBtn.listening {
+  border-color: var(--blue);
+  background: rgba(0,212,255,0.1);
+  box-shadow: 0 0 36px rgba(0,212,255,0.55);
+  animation: micPulse 1s ease-in-out infinite;
+}
+#micBtn.listening::before { animation: micRing 1.2s ease-out infinite; }
+@keyframes micPulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.07)} }
+@keyframes micRing  { 0%{transform:scale(1);opacity:0.4} 100%{transform:scale(1.7);opacity:0} }
+
+#micLabel {
+  font-size: 9px; letter-spacing: 0.25em;
+  color: var(--muted); text-transform: uppercase;
+  transition: color 0.3s;
+}
+#micLabel.active { color: var(--blue); }
+
+/* ── LOG STRIP (bottom right) ────────────────────────────────── */
+#logStrip {
+  position: fixed;
+  bottom: 20px; right: 20px;
+  width: 260px;
+  z-index: 20;
+  display: flex; flex-direction: column; gap: 4px;
+  pointer-events: none;
+}
+.log-entry {
+  font-size: 10px; letter-spacing: 0.05em;
+  color: rgba(0,212,255,0.6);
+  padding: 4px 8px;
+  border-left: 2px solid rgba(0,212,255,0.25);
+  background: rgba(0,0,0,0.35);
+  animation: logIn 0.2s ease;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.log-entry.ok  { border-left-color: var(--blue); color: var(--blue); }
+.log-entry.err { border-left-color: rgba(0,212,255,0.3); opacity: 0.6; }
+@keyframes logIn { from{opacity:0;transform:translateX(8px)} to{opacity:1;transform:translateX(0)} }
+
+/* Scanline */
+body::after {
+  content: '';
+  position: fixed; inset: 0; z-index: 200;
+  background: repeating-linear-gradient(to bottom, transparent 0, transparent 3px, rgba(0,0,0,0.025) 3px, rgba(0,0,0,0.025) 4px);
+  pointer-events: none;
+}
+</style>
+</head>
+<body>
+
+<!-- ── TOP BAR ────────────────────────────────────────────────── -->
+<div id="topbar">
+  <button id="menuBtn" onclick="toggleMenu()" aria-label="Menu">
+    <span></span><span></span><span></span>
+  </button>
+
+  <div class="bar-title">J.O.N.A.T.H.A.N.</div>
+
+  <div id="connStatus">
+    <div class="dot" id="dot"></div>
+    <span id="connLabel">OFFLINE</span>
+  </div>
+
+  <div id="portRow">
+    <select id="portSel"><option value="">— Select Port —</option></select>
+    <select id="baudSel">
+      <option value="9600" selected>9600</option>
+      <option value="115200">115200</option>
+    </select>
+    <button class="bar-btn" id="connectBtn"    onclick="connectSerial()">Connect</button>
+    <button class="bar-btn" id="disconnectBtn" onclick="disconnectSerial()" disabled>Disconnect</button>
+    <button class="bar-btn" onclick="refreshPorts()">⟳</button>
+  </div>
+</div>
+
+<!-- ── OVERLAY ────────────────────────────────────────────────── -->
+<div id="overlay" onclick="closeMenu()"></div>
+
+<!-- ── COMMAND MENU ───────────────────────────────────────────── -->
+<nav id="cmdMenu">
+  <div class="menu-label">Voice / Click Commands</div>
+
+  <div class="menu-label">Greetings</div>
+  <button class="menu-cmd" onclick="fire('WAVE')">
+    <div><span class="cmd-label">Wave</span><span class="cmd-desc">Rise and wave wrist 4 times</span></div>
+    <span class="cmd-key">WAVE</span>
+  </button>
+  <button class="menu-cmd" onclick="fire('SALUTE')">
+    <div><span class="cmd-label">Salute</span><span class="cmd-desc">Military salute, hold, return</span></div>
+    <span class="cmd-key">SALUTE</span>
+  </button>
+
+  <div class="menu-label">Movement</div>
+  <button class="menu-cmd" onclick="fire('SPIN')">
+    <div><span class="cmd-label">Spin</span><span class="cmd-desc">Full base sweep left → right</span></div>
+    <span class="cmd-key">SPIN</span>
+  </button>
+  <button class="menu-cmd" onclick="fire('REACH')">
+    <div><span class="cmd-label">Reach</span><span class="cmd-desc">Extend outward and retract</span></div>
+    <span class="cmd-key">REACH</span>
+  </button>
+  <button class="menu-cmd" onclick="fire('POINT')">
+    <div><span class="cmd-label">Point</span><span class="cmd-desc">Point and scan left to right</span></div>
+    <span class="cmd-key">POINT</span>
+  </button>
+  <button class="menu-cmd" onclick="fire('SHAKE')">
+    <div><span class="cmd-label">Shake</span><span class="cmd-desc">Rapid wrist oscillation</span></div>
+    <span class="cmd-key">SHAKE</span>
+  </button>
+  <button class="menu-cmd" onclick="fire('STRETCH')">
+    <div><span class="cmd-label">Stretch</span><span class="cmd-desc">Full range sweep all joints</span></div>
+    <span class="cmd-key">STRETCH</span>
+  </button>
+
+  <div class="menu-label">Performance</div>
+  <button class="menu-cmd" onclick="fire('DANCE')">
+    <div><span class="cmd-label">Dance</span><span class="cmd-desc">Full 6-beat choreography</span></div>
+    <span class="cmd-key">DANCE</span>
+  </button>
+  <button class="menu-cmd" onclick="fire('CELEBRATE')">
+    <div><span class="cmd-label">Celebrate</span><span class="cmd-desc">Victory pump, spin, shake</span></div>
+    <span class="cmd-key">CELEBRATE</span>
+  </button>
+
+  <div class="menu-label">System</div>
+  <button class="menu-cmd" onclick="fire('REST')">
+    <div><span class="cmd-label">Rest</span><span class="cmd-desc">Return all joints to rest</span></div>
+    <span class="cmd-key">REST</span>
+  </button>
+
+  <div class="menu-label">Type a Command</div>
+  <div class="menu-input-row">
+    <input type="text" id="textIn" placeholder="e.g. wave..." onkeydown="if(event.key==='Enter')sendText()"/>
+    <button onclick="sendText()">Send</button>
+  </div>
+</nav>
+
+<!-- ── STAGE ──────────────────────────────────────────────────── -->
+<div id="stage">
+  <canvas id="orb"></canvas>
+  <div id="orbCenter">
+    <div id="orbStatus">Standing By</div>
+    <div id="orbResponse"></div>
+  </div>
+</div>
+
+<!-- ── MIC ────────────────────────────────────────────────────── -->
+<div id="micWrap">
+  <button id="micBtn" onclick="toggleMic()">
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+      <rect x="9" y="2" width="6" height="12" rx="3"/>
+      <path d="M5 10c0 6 14 6 14 0"/><line x1="12" y1="19" x2="12" y2="22"/>
+      <line x1="8" y1="22" x2="16" y2="22"/>
+    </svg>
+  </button>
+  <div id="micLabel">Tap to speak</div>
+</div>
+
+<!-- ── LOG ────────────────────────────────────────────────────── -->
+<div id="logStrip"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+//  ORB PARTICLE SYSTEM
+// ═══════════════════════════════════════════════════════════════
+const canvas = document.getElementById('orb');
+const ctx    = canvas.getContext('2d');
+
+let W, H, cx, cy, orbR;
+let particles = [];
+let rings     = [];
+let orbState  = 'idle'; // idle | listening | active
+let animFrame;
+
+function resize() {
+  W  = canvas.width  = canvas.offsetWidth;
+  H  = canvas.height = canvas.offsetHeight;
+  cx = W / 2; cy = H / 2;
+  orbR = Math.min(W, H) * 0.19;
+}
+window.addEventListener('resize', () => { resize(); initParticles(); });
+resize();
+
+// ── Particle ────────────────────────────────────────────────────
+class Particle {
+  constructor() { this.reset(); }
+  reset() {
+    const angle  = Math.random() * Math.PI * 2;
+    const radius = orbR * (0.4 + Math.random() * 2.2);
+    this.x   = cx + Math.cos(angle) * radius;
+    this.y   = cy + Math.sin(angle) * radius;
+    this.tx  = cx; this.ty = cy; // drift target toward centre
+    this.vx  = (Math.random() - 0.5) * 0.4;
+    this.vy  = (Math.random() - 0.5) * 0.4;
+    this.r   = Math.random() * 1.5 + 0.3;
+    this.alpha = Math.random() * 0.5 + 0.1;
+    this.life  = Math.random() * 200 + 80;
+    this.age   = 0;
+    this.speed = Math.random() * 0.012 + 0.003;
+  }
+  update() {
+    // Drift slowly toward/around the orb centre
+    const dx = cx - this.x, dy = cy - this.y;
+    const dist = Math.sqrt(dx*dx+dy*dy);
+    // Orbit tangent + slight inward pull
+    const tang = Math.atan2(dy, dx) + Math.PI * 0.5;
+    this.vx += (Math.cos(tang) * 0.018 + dx/dist * 0.006);
+    this.vy += (Math.sin(tang) * 0.018 + dy/dist * 0.006);
+    // Extra energy when active
+    if (orbState === 'active') { this.vx *= 1.04; this.vy *= 1.04; }
+    // Dampen
+    this.vx *= 0.97; this.vy *= 0.97;
+    this.x += this.vx; this.y += this.vy;
+    this.age++;
+    if (this.age > this.life || dist < orbR * 0.3) this.reset();
+  }
+  draw() {
+    const fade = Math.min(this.age / 20, 1) * Math.min((this.life - this.age) / 20, 1);
+    ctx.globalAlpha = this.alpha * fade;
+    ctx.fillStyle   = '#00d4ff';
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+// ── Ring pulse ──────────────────────────────────────────────────
+class Ring {
+  constructor() {
+    this.r     = orbR * 0.6;
+    this.alpha = 0.6;
+    this.speed = 1.2 + Math.random() * 1.2;
+  }
+  update() {
+    this.r     += this.speed;
+    this.alpha -= 0.012;
+  }
+  dead() { return this.alpha <= 0; }
+  draw() {
+    ctx.globalAlpha    = this.alpha;
+    ctx.strokeStyle    = '#00d4ff';
+    ctx.lineWidth      = 1;
+    ctx.beginPath();
+    ctx.arc(cx, cy, this.r, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+}
+
+function initParticles() {
+  particles = Array.from({length: 220}, () => new Particle());
+}
+initParticles();
+
+let ringTimer = 0;
+function loop() {
+  ctx.clearRect(0, 0, W, H);
+
+  // ── Draw orb core ──
+  const glowSize = orbState === 'active' ? orbR * 1.6 : orbR * 1.2;
+  const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, glowSize);
+  grad.addColorStop(0,   'rgba(0,212,255,0.18)');
+  grad.addColorStop(0.35,'rgba(0,212,255,0.08)');
+  grad.addColorStop(1,   'rgba(0,212,255,0)');
+  ctx.globalAlpha = 1;
+  ctx.fillStyle   = grad;
+  ctx.beginPath();
+  ctx.arc(cx, cy, glowSize, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Orb ring border
+  ctx.globalAlpha  = orbState === 'listening' ? 0.9 : 0.5;
+  ctx.strokeStyle  = '#00d4ff';
+  ctx.lineWidth    = orbState === 'active' ? 1.5 : 1;
+  ctx.beginPath();
+  ctx.arc(cx, cy, orbR, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // Inner ring
+  ctx.globalAlpha = 0.2;
+  ctx.beginPath();
+  ctx.arc(cx, cy, orbR * 0.65, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // ── Particles ──
+  particles.forEach(p => { p.update(); p.draw(); });
+
+  // ── Rings ──
+  ringTimer++;
+  const ringInterval = orbState === 'active' ? 18 : orbState === 'listening' ? 30 : 70;
+  if (ringTimer % ringInterval === 0) rings.push(new Ring());
+  rings = rings.filter(r => !r.dead());
+  rings.forEach(r => { r.update(); r.draw(); });
+
+  ctx.globalAlpha = 1;
+  animFrame = requestAnimationFrame(loop);
+}
+loop();
+
+function setOrbState(state, statusText, responseText) {
+  orbState = state;
+  document.getElementById('orbStatus').textContent   = statusText   || '';
+  document.getElementById('orbResponse').textContent = responseText || '';
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  MENU
+// ═══════════════════════════════════════════════════════════════
+function toggleMenu() {
+  const menu = document.getElementById('cmdMenu');
+  const btn  = document.getElementById('menuBtn');
+  const ov   = document.getElementById('overlay');
+  const open = menu.classList.toggle('open');
+  btn.classList.toggle('open', open);
+  ov.classList.toggle('show', open);
+}
+function closeMenu() {
+  document.getElementById('cmdMenu').classList.remove('open');
+  document.getElementById('menuBtn').classList.remove('open');
+  document.getElementById('overlay').classList.remove('show');
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  SOCKET.IO
+// ═══════════════════════════════════════════════════════════════
+const socket = io();
+
+socket.on('connect', () => log('WebSocket connected.', 'ok'));
+socket.on('disconnect', () => {
+  log('WebSocket disconnected.', 'err');
+  setConn('disconnected', 'OFFLINE');
+  setOrbState('idle', 'Offline', '');
+});
+
+socket.on('serial_status', d => {
+  const ok = d.status === 'connected';
+  setConn(d.status, d.status.toUpperCase());
+  log(d.message, ok ? 'ok' : 'err');
+  setOrbState(ok ? 'idle' : 'idle', ok ? 'Standing By' : 'Disconnected', d.message);
+});
+
+socket.on('command_result', d => {
+  setVoiceState('idle');
+  const state = d.success ? 'active' : 'idle';
+  setOrbState(state, d.command || 'Error', d.response);
+  log((d.heard ? `"${d.heard}" → ` : '') + (d.command || '?'), d.success ? 'ok' : 'err');
+  if (d.response) jarvisSpeak(d.response);
+  if (d.success) setTimeout(() => setOrbState('idle', 'Standing By', ''), 4000);
+});
+
+socket.on('arduino_ack', d => log(`[ARD] ${d.message}`, 'ok'));
+
+// ═══════════════════════════════════════════════════════════════
+//  SERIAL
+// ═══════════════════════════════════════════════════════════════
+async function refreshPorts() {
+  const sel = document.getElementById('portSel');
+  sel.innerHTML = '<option value="">— Scanning... —</option>';
+  try {
+    const data = await (await fetch('/ports')).json();
+    sel.innerHTML = data.length
+      ? data.map(p => `<option value="${p.device}">${p.device} — ${p.description}</option>`).join('')
+      : '<option value="">No ports found</option>';
+  } catch { sel.innerHTML = '<option value="">Error</option>'; }
+}
+refreshPorts();
+
+function connectSerial() {
+  const port = document.getElementById('portSel').value;
+  const baud = document.getElementById('baudSel').value;
+  if (!port) { alert('Select a port first.'); return; }
+  socket.emit('connect_serial', { port, baud: parseInt(baud) });
+  document.getElementById('connectBtn').disabled    = true;
+  document.getElementById('disconnectBtn').disabled = false;
+}
+function disconnectSerial() {
+  socket.emit('disconnect_serial');
+  document.getElementById('connectBtn').disabled    = false;
+  document.getElementById('disconnectBtn').disabled = true;
+}
+function setConn(state, label) {
+  const dot = document.getElementById('dot');
+  dot.className = 'dot' + (state === 'connected' ? ' on' : '');
+  document.getElementById('connLabel').textContent = label;
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  COMMANDS
+// ═══════════════════════════════════════════════════════════════
+function fire(cmd) {
+  closeMenu();
+  socket.emit('button_command', { command: cmd });
+  setOrbState('active', cmd, 'Sending command...');
+}
+
+function sendText() {
+  const inp  = document.getElementById('textIn');
+  const text = inp.value.trim();
+  if (!text) return;
+  socket.emit('text_command', { text });
+  inp.value = '';
+  closeMenu();
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  VOICE
+// ═══════════════════════════════════════════════════════════════
+let mediaRec = null, chunks = [], isListening = false;
+
+async function toggleMic() {
+  if (isListening) { stopMic(); return; }
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    mediaRec = new MediaRecorder(stream);
+    chunks   = [];
+    mediaRec.ondataavailable = e => chunks.push(e.data);
+    mediaRec.onstop = async () => {
+      setVoiceState('processing');
+      const blob   = new Blob(chunks, { type: 'audio/wav' });
+      const bytes  = Array.from(new Uint8Array(await blob.arrayBuffer()));
+      socket.emit('voice_audio', { audio: bytes });
+      stream.getTracks().forEach(t => t.stop());
+    };
+    mediaRec.start();
+    isListening = true;
+    setVoiceState('listening');
+  } catch(e) {
+    setVoiceState('idle');
+    setOrbState('idle', 'Mic Error', 'Check browser permissions.');
+  }
+}
+
+function stopMic() {
+  if (mediaRec && mediaRec.state !== 'inactive') mediaRec.stop();
+  isListening = false;
+}
+
+function setVoiceState(state) {
+  const btn = document.getElementById('micBtn');
+  const lbl = document.getElementById('micLabel');
+  btn.classList.toggle('listening', state === 'listening');
+  lbl.classList.toggle('active', state !== 'idle');
+  lbl.textContent =
+    state === 'listening'  ? 'Listening...'  :
+    state === 'processing' ? 'Processing...' : 'Tap to speak';
+  if (state === 'listening')  setOrbState('listening', 'Listening', '');
+  if (state === 'processing') setOrbState('active', 'Processing', '');
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  TTS
+// ═══════════════════════════════════════════════════════════════
+const synth = window.speechSynthesis;
+let jarvisVoice  = null;
+let ttsUnlocked  = false;
+
+function loadVoice() {
+  const voices = synth.getVoices();
+  jarvisVoice =
+    voices.find(v => v.lang === 'en-GB' && v.name.toLowerCase().includes('daniel')) ||
+    voices.find(v => v.lang === 'en-GB') ||
+    voices.find(v => v.lang.startsWith('en') && v.name.toLowerCase().includes('alex')) ||
+    voices.find(v => v.lang.startsWith('en')) || voices[0] || null;
+  if (jarvisVoice) console.log('[TTS] Voice:', jarvisVoice.name);
+}
+synth.onvoiceschanged = loadVoice;
+loadVoice();
+
+// Chrome requires speechSynthesis to be called from a user gesture first.
+// We fire a silent utterance on the very first click anywhere so all
+// subsequent socket-triggered speech works without being blocked.
+function unlockTTS() {
+  if (ttsUnlocked) return;
+  ttsUnlocked = true;
+  const u = new SpeechSynthesisUtterance('');
+  u.volume = 0;
+  synth.speak(u);
+}
+document.addEventListener('click', unlockTTS, { once: true });
+document.addEventListener('touchend', unlockTTS, { once: true });
+
+// Chrome has a bug where speechSynthesis stalls after ~15 seconds.
+// Calling resume() on an interval keeps it alive.
+setInterval(() => { if (synth.speaking) synth.resume(); }, 5000);
+
+function jarvisSpeak(text) {
+  if (!text) return;
+  synth.cancel();
+  // Small delay lets cancel() fully clear before speaking
+  setTimeout(() => {
+    const u   = new SpeechSynthesisUtterance(text);
+    u.voice   = jarvisVoice;
+    u.rate    = 0.95;
+    u.pitch   = 0.85;
+    u.volume  = 1.0;
+    u.onerror = e => console.warn('[TTS] Error:', e.error);
+    synth.speak(u);
+  }, 120);
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  LOG
+// ═══════════════════════════════════════════════════════════════
+function log(msg, type = '') {
+  const strip = document.getElementById('logStrip');
+  const el    = document.createElement('div');
+  el.className = `log-entry ${type}`;
+  el.textContent = `${new Date().toLocaleTimeString('en-GB',{hour12:false})}  ${msg}`;
+  strip.prepend(el);
+  while (strip.children.length > 6) strip.removeChild(strip.lastChild);
+}
+</script>
+</body>
+</html>
