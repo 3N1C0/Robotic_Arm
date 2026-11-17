@@ -12,7 +12,7 @@ This project has two parts. The first is a 4-DOF desktop robotic arm with 3D-pri
 | `STL_files/` | 3D-printable parts for the arm |
 | `Code_files/Jarvis_Backend.py` | Flask-SocketIO server that bridges the web UI, speech recognition and serial |
 | `Code_files/Jarvis_Frontend.html` | Browser control panel for the backend |
-| `Code_files/Jarvis_Arduino.ino` | Arduino firmware that receives commands over serial |
+| `Code_files/Jarvis_Arduino.ino` | Arduino Uno firmware for the 4 servos (base, shoulder, elbow, wrist on pins 6, 9, 10, 11). It receives commands over serial at 9600 baud: `WAVE`, `SPIN`, `REST`, `DANCE`, `SALUTE` and `STRETCH`. |
 | `test.ipynb` | Notebook used for experiments |
 
 ## Skills demonstrated
@@ -37,7 +37,7 @@ pip install flask flask-socketio pyserial speechrecognition eventlet
 python Code_files/Jarvis_Backend.py
 ```
 
-Upload `Code_files/Jarvis_Arduino.ino` to the Arduino first, then connect the backend to its serial port from the web page.
+Upload `Code_files/Jarvis_Arduino.ino` to the Arduino first. The servos need an external 6 V supply, with its ground shared with the Arduino's ground. Then connect the backend to the Arduino's serial port from the web page.
 
 ## Notes
 
