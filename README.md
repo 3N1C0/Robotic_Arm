@@ -1,4 +1,45 @@
-# Robotic_Arm
-This is my 4 DOF Robotic Arm project with current STL files of the 3D CAD model, an interactive Inverse and Forward Kinematics website to visualize movement, and the code to control the robotic arm (in progress).
+# Robotic Arm: Kinematics Simulator and JARVIS Controller
 
-Here is the link to the website if interested: https://dof-kinematics-simulation.streamlit.app/
+This project has two parts. The first is a 4-DOF desktop robotic arm with 3D-printed parts (`STL_files/`). The second is software for it: an interactive web app that visualises forward and inverse kinematics, and a control backend that links a web interface and speech input to an Arduino over serial.
+
+**Live kinematics app:** https://dof-kinematics-simulation.streamlit.app/
+
+## What's inside
+
+| Path | What it is |
+|---|---|
+| `app.py` | Streamlit app: forward and inverse kinematics for 2- and 3-link planar arms, with plots |
+| `STL_files/` | 3D-printable parts for the arm |
+| `Code_files/Jarvis_Backend.py` | Flask-SocketIO server that bridges the web UI, speech recognition and serial |
+| `Code_files/Jarvis_Frontend.html` | Browser control panel for the backend |
+| `Code_files/Jarvis_Arduino.ino` | Arduino Uno firmware for the 4 servos (base, shoulder, elbow, wrist on pins 6, 9, 10, 11). It receives commands over serial at 9600 baud: `WAVE`, `SPIN`, `REST`, `DANCE`, `SALUTE` and `STRETCH`. |
+| `test.ipynb` | Notebook used for experiments |
+
+## Skills demonstrated
+
+- **Robotics maths:** forward kinematics (joint angles to end-effector position) and inverse kinematics (target position to joint angles) for planar linkages.
+- **Interactive visualisation:** Streamlit sidebars for link lengths, Plotly plots that update on input.
+- **Real-time systems:** WebSocket communication with Flask-SocketIO.
+- **Embedded integration:** serial communication with `pyserial`, with a port picker and connection handling.
+- **Mechanical design:** the arm's parts were modelled in CAD and exported as STL.
+
+## Run the kinematics app
+
+```bash
+pip install -r requirements.txt
+streamlit run app.py
+```
+
+## Run the JARVIS backend
+
+```bash
+pip install flask flask-socketio pyserial speechrecognition eventlet
+python Code_files/Jarvis_Backend.py
+```
+
+Upload `Code_files/Jarvis_Arduino.ino` to the Arduino first. The servos need an external 6 V supply, with its ground shared with the Arduino's ground. Then connect the backend to the Arduino's serial port from the web page.
+
+## Notes
+
+- The backend's `SECRET_KEY` is a development placeholder. Change it before exposing the server to any network.
+- The arm's control code is still in progress.
